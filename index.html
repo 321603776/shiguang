@@ -139,4 +139,190 @@
             </div>
             <div class="modal-footer">
                 <button onclick="closeModal()" style="background:#f1f1f3;">取消</button>
-                <button class="btn-save" id="btn-modal-save">完成</b
+                <button class="btn-save" id="btn-modal-save">完成</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部底栏 -->
+    <div class="input-bar">
+        <div class="input-row">
+            <input type="text" id="title" class="input-field" placeholder="记录此刻..." autocomplete="off">
+            
+            <button class="circle-btn" id="desc-btn" onclick="openModalForAdd()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            </button>
+
+            <div class="circle-btn" id="start-btn">
+                <span>始</span><input type="datetime-local" id="startTime" onchange="syncUI('start')">
+            </div>
+
+            <div class="circle-btn" id="end-btn">
+                <span>末</span><input type="datetime-local" id="endTime" onchange="syncUI('end')">
+            </div>
+
+            <button class="circle-btn send-btn" onclick="addEvent()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js'); });
+        }
+
+        const DB_KEY = 'shiguang_storage_v1';
+        let events = JSON.parse(localStorage.getItem(DB_KEY)) || [];
+        let editingId = null;
+
+        function formatToInput(date) {
+            if(!date) return "";
+            const d = new Date(date);
+            const tzOffset = d.getTimezoneOffset() * 60000;
+            return new Date(d - tzOffset).toISOString().slice(0, 16);
+        }
+
+        function initTimeInputs() {
+            document.getElementById('startTime').value = formatToInput(new Date());
+            document.getElementById('endTime').value = "";
+            document.getElementById('m-desc').value = "";
+            syncUI('start'); syncUI('end');
+            document.getElementById('desc-btn').classList.remove('btn-active');
+        }
+
+        function syncUI(type) {
+            const btn = document.getElementById(type + '-btn');
+            btn.classList.toggle('btn-active', !!document.getElementById(type + 'Time').value);
+        }
+
+        function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
+
+        function openModalForAdd() {
+            editingId = null;
+            document.getElementById('m-title').value = document.getElementById('title').value;
+            document.getElementById('m-start').value = document.getElementById('startTime').value;
+            document.getElementById('m-end').value = document.getElementById('endTime').value;
+            document.getElementById('m-desc').value = "";
+            document.getElementById('modal-overlay').style.display = 'flex';
+            document.getElementById('btn-modal-save').onclick = () => {
+                document.getElementById('title').value = document.getElementById('m-title').value;
+                document.getElementById('startTime').value = document.getElementById('m-start').value;
+                document.getElementById('endTime').value = document.getElementById('m-end').value;
+                document.getElementById('desc-btn').classList.toggle('btn-active', !!document.getElementById('m-desc').value.trim());
+                syncUI('start'); syncUI('end');
+                closeModal();
+            };
+        }
+
+        function openEdit(id) {
+            editingId = id;
+            const ev = events.find(e => e.id === id);
+            document.getElementById('m-title').value = ev.title;
+            document.getElementById('m-start').value = ev.start;
+            document.getElementById('m-end').value = ev.end || "";
+            document.getElementById('m-desc').value = ev.desc || "";
+            document.getElementById('modal-overlay').style.display = 'flex';
+            document.getElementById('btn-modal-save').onclick = () => {
+                const idx = events.findIndex(e => e.id === id);
+                events[idx] = { ...events[idx], 
+                    title: document.getElementById('m-title').value,
+                    start: document.getElementById('m-start').value,
+                    end: document.getElementById('m-end').value,
+                    desc: document.getElementById('m-desc').value
+                };
+                localStorage.setItem(DB_KEY, JSON.stringify(events));
+                render(); closeModal();
+            };
+        }
+
+        function render() {
+            const container = document.getElementById('timeline');
+            if (events.length === 0) {
+                container.classList.remove('has-items');
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z M12 2v2m0 16v2m10-10h-2M4 10H2"></path></svg>
+                        <div class="empty-title">拾起一段时光</div>
+                        <div class="empty-desc">在下方输入内容开启记录</div>
+                    </div>`;
+                return;
+            }
+            container.classList.add('has-items');
+            events.sort((a, b) => new Date(a.start) - new Date(b.start));
+
+            let html = '', lastD = '';
+            events.forEach(e => {
+                const sD = new Date(e.start);
+                const dStr = `${sD.getFullYear()} / ${sD.getMonth() + 1} / ${sD.getDate()}`;
+                const sh = sD.getHours().toString().padStart(2, '0'), sm = sD.getMinutes().toString().padStart(2, '0');
+                
+                let range = '';
+                if (e.end) {
+                    const eD = new Date(e.end);
+                    range = `<span class="time-range">~ ${eD.getHours().toString().padStart(2, '0')}:${eD.getMinutes().toString().padStart(2, '0')}</span>`;
+                }
+
+                if (dStr !== lastD) {
+                    const l = Lunar.fromDate(sD);
+                    html += `<div class="date-divider">
+                        <span class="lunar-tag">${l.getMonthInChinese()}月${l.getDayInChinese()} · ${l.getYearShengXiao()}年 ${l.getJieQi()}</span>
+                        <div class="date-pill">${dStr}</div>
+                    </div>`;
+                    lastD = dStr;
+                }
+
+                html += `<div class="event-node">
+                    <div class="time-label"><span class="time-hour">${sh}:${sm}</span>${range}</div>
+                    <div class="node-card">
+                        <div class="node-icon">${(h=>h>=5&&h<8?'🌅':h>=8&&h<17?'☀️':h>=17&&h<19?'🌇':h>=19&&h<23?'✨':'🌙')(sD.getHours())}</div>
+                        <div class="node-actions">
+                            <button class="action-btn" onclick="openEdit(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
+                            <button class="action-btn" onclick="deleteEvent(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+                        </div>
+                        <div class="node-title">${e.title}</div>
+                        ${e.desc ? `<div class="node-desc">${e.desc}</div>` : ''}
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = html;
+            setTimeout(()=>document.getElementById('scroll-area').scrollTo({top:99999, behavior:'smooth'}), 100);
+        }
+
+        function addEvent() {
+            const t = document.getElementById('title').value;
+            if (!t.trim()) return;
+            events.push({ id: Date.now(), title: t, start: document.getElementById('startTime').value, end: document.getElementById('endTime').value, desc: document.getElementById('m-desc').value });
+            localStorage.setItem(DB_KEY, JSON.stringify(events));
+            document.getElementById('title').value = "";
+            render(); initTimeInputs();
+        }
+
+        function deleteEvent(id) {
+            if(confirm('删除此条记录？')) {
+                events = events.filter(e => e.id !== id);
+                localStorage.setItem(DB_KEY, JSON.stringify(events));
+                render();
+            }
+        }
+
+        async function handleExport() {
+            const exportWin = document.createElement('div');
+            Object.assign(exportWin.style, { position: 'fixed', top: '-9999px', width: '400px' });
+            document.body.appendChild(exportWin);
+            const clone = document.getElementById('main-content').cloneNode(true);
+            exportWin.appendChild(clone);
+            exportWin.classList.add('export-mode');
+            exportWin.querySelector('.watermark').style.display = "block";
+            const canvas = await html2canvas(exportWin, { backgroundColor: '#f9f9fb', scale: 4 });
+            const link = document.createElement('a');
+            link.download = `拾光_${Date.now()}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+            document.body.removeChild(exportWin);
+        }
+
+        initTimeInputs(); render();
+    </script>
+</body>
+</html>
