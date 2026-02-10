@@ -8,7 +8,6 @@
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="拾光">
     
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/lunar-javascript/lunar.js"></script>
@@ -25,116 +24,131 @@
             --orange: #ff9500;
         }
 
-        /* 基础结构：锁定视口，禁止系统回弹 */
+        /* 基础结构 */
         html, body { height: 100%; width: 100%; overflow: hidden; overscroll-behavior: none; background: var(--bg); }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         body { font-family: -apple-system, "SF Pro Text", "PingFang SC", sans-serif; color: var(--text-main); display: flex; flex-direction: column; }
 
         header { height: 64px; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; background: var(--bg); z-index: 100; flex-shrink: 0; }
         header h1 { font-size: 22px; font-weight: 700; letter-spacing: -1px; }
-        .btn-share { background: #fff; padding: 6px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; border: 1px solid var(--border); cursor: pointer; }
+        .btn-share { background: #fff; padding: 6px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; border: 1px solid var(--border); cursor: pointer; color: var(--text-main); }
 
-        /* 内容滚动区 */
-        #scroll-area { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; padding: 10px 16px 140px 10px; scroll-behavior: smooth; }
-        .timeline { position: relative; padding-left: 0; transition: padding 0.3s ease; }
+        /* 内容区域 */
+        #scroll-area { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; padding: 10px 20px 140px 20px; scroll-behavior: smooth; }
+        
+        .timeline { position: relative; padding-left: 0; transition: padding 0.3s ease; max-width: 600px; margin: 0 auto; }
         .timeline.has-items { padding-left: 80px; }
         .timeline.has-items::before { content: ''; position: absolute; left: 66px; top: 0; bottom: 0; width: 1px; background: var(--line); }
 
-        /* 缺省页样式 */
-        .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; text-align: center; animation: fadeIn 0.8s ease-out; }
-        .empty-icon { width: 64px; height: 64px; margin-bottom: 24px; color: #e1e1e6; animation: float 4s ease-in-out infinite; }
-        .empty-title { font-size: 16px; font-weight: 600; color: var(--accent); margin-bottom: 8px; }
-        .empty-desc { font-size: 13px; color: var(--text-gray); line-height: 1.6; }
+        /* 缺省页 */
+        .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; text-align: center; color: var(--text-gray); }
+        .empty-icon { width: 50px; height: 50px; margin-bottom: 20px; opacity: 0.2; }
 
-        /* 记录节点渲染 */
-        .date-divider { position: relative; margin: 32px 0 20px -70px; display: flex; flex-direction: column; align-items: center; z-index: 1; }
+        /* 日期与农历 */
+        .date-divider { position: relative; margin: 32px 0 24px -80px; display: flex; flex-direction: column; align-items: center; z-index: 1; }
         .lunar-tag { font-size: 10px; color: var(--orange); font-weight: 700; margin-bottom: 4px; }
         .date-pill { background: #fff; border: 1px solid var(--border); color: var(--text-gray); padding: 4px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; }
 
-        .event-node { position: relative; margin-bottom: 30px; display: flex; }
-        .time-label { position: absolute; left: -80px; top: 8px; width: 60px; display: flex; flex-direction: column; align-items: flex-end; font-family: "SF Mono", monospace; }
-        .time-hour { font-size: 18px; font-weight: 800; line-height: 1; color: var(--accent); }
-        .time-range { font-size: 10px; font-weight: 600; color: var(--text-gray); margin-top: 4px; text-align: right; }
+        /* 记录节点 */
+        .event-node { position: relative; margin-bottom: 32px; display: flex; width: 100%; }
+        .time-label { position: absolute; left: -80px; top: 6px; width: 60px; display: flex; flex-direction: column; align-items: flex-end; font-family: "SF Mono", monospace; }
+        .time-hour { font-size: 17px; font-weight: 800; line-height: 1; color: var(--accent); }
+        .time-range { font-size: 10px; font-weight: 600; color: var(--text-gray); margin-top: 4px; }
 
-        .node-card { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 16px; position: relative; margin-left: 10px; flex: 1; }
-        .node-icon { position: absolute; top: -12px; left: -12px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 18px; z-index: 2; }
-        .node-title { font-size: 15px; font-weight: 500; line-height: 1.5; color: var(--text-main); padding-right: 40px; word-break: break-all; }
-        .node-desc { font-size: 13px; color: var(--text-gray); margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); white-space: pre-wrap; }
+        .node-card { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 18px; position: relative; margin-left: 10px; flex: 1; transition: background 0.2s; }
+        .node-icon { position: absolute; top: -12px; left: -12px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 20px; z-index: 2; }
+        .node-title { font-size: 15px; font-weight: 500; line-height: 1.6; color: var(--text-main); padding-right: 45px; word-break: break-all; }
+        .node-desc { font-size: 13px; color: var(--text-gray); margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); white-space: pre-wrap; line-height: 1.5; }
 
+        /* 动作按钮 */
         .node-actions { position: absolute; right: 8px; top: 12px; display: flex; gap: 4px; }
         .action-btn { background: none; border: none; padding: 4px; cursor: pointer; color: #ddd; display: flex; }
         .action-btn svg { width: 16px; height: 16px; stroke: currentColor; }
 
-        /* 底部输入栏：修复挤压 */
-        .input-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255,255,255,0.98); backdrop-filter: blur(20px); border-top: 1px solid var(--border); padding: 12px 12px calc(12px + env(safe-area-inset-bottom)); z-index: 1000; }
-        .input-row { display: flex; align-items: center; gap: 10px; max-width: 600px; margin: 0 auto; }
-        .input-field { flex: 1; min-width: 0; background: #f1f1f3; border: none; outline: none; padding: 12px 16px; border-radius: 12px; font-size: 16px; }
+        /* 底部底栏 */
+        .input-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255,255,255,0.98); backdrop-filter: blur(20px); border-top: 1px solid var(--border); padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); z-index: 1000; }
+        .input-row { display: flex; align-items: center; gap: 8px; max-width: 600px; margin: 0 auto; }
+        .input-field { flex: 1; min-width: 0; background: #f1f1f3; border: none; outline: none; padding: 10px 14px; border-radius: 10px; font-size: 16px; font-weight: 400; color: var(--text-main); }
 
-        .circle-btn { width: 44px; height: 44px; border-radius: 22px; border: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fff; flex-shrink: 0; color: var(--text-gray); cursor: pointer; position: relative; font-size: 11px; font-weight: 700; }
+        .circle-btn { width: 44px; height: 44px; border-radius: 22px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; background: #fff; flex-shrink: 0; color: var(--text-gray); cursor: pointer; position: relative; font-size: 11px; font-weight: 700; }
         .circle-btn svg { width: 20px; height: 20px; }
         .circle-btn input[type="datetime-local"] { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
         .btn-active { color: var(--blue) !important; border-color: var(--blue) !important; }
         .send-btn { background: var(--accent); color: #fff; border: none; }
 
-        /* 编辑弹窗：修复挤压 */
+        /* 编辑弹窗 */
         #modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(10px); z-index: 2000; align-items: center; justify-content: center; padding: 20px; }
         .modal-sheet { background: #fff; width: 100%; max-width: 400px; border-radius: 24px; padding: 24px; display: flex; flex-direction: column; gap: 16px; animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
         .modal-group { display: flex; flex-direction: column; gap: 8px; width: 100%; }
-        .modal-label { font-size: 11px; font-weight: 800; color: var(--text-gray); text-transform: uppercase; letter-spacing: 0.5px; }
-        .modal-input { width: 100%; border: 1px solid var(--border); border-radius: 12px; padding: 12px; font-size: 16px; outline: none; background: #fafafa; }
-        
+        .modal-label { font-size: 11px; font-weight: 800; color: var(--text-gray); text-transform: uppercase; }
+        .modal-input { width: 100%; border: 1px solid var(--border); border-radius: 12px; padding: 12px; font-size: 16px; outline: none; background: #fafafa; color: var(--text-main); }
         .modal-time-row { display: flex; flex-direction: column; gap: 12px; }
         @media (min-width: 360px) { .modal-time-row { flex-direction: row; } }
         .modal-time-row .modal-group { flex: 1; min-width: 0; }
-
         .modal-footer { display: flex; gap: 12px; margin-top: 10px; }
         .modal-footer button { flex: 1; padding: 14px; border-radius: 14px; border: none; font-weight: 700; cursor: pointer; font-size: 15px; }
         .btn-save { background: var(--accent); color: #fff; }
 
-        /* 导出增强 */
-        .export-mode { background: var(--bg) !important; width: 400px !important; }
-        .export-mode .node-actions, .export-mode .del-btn { display: none !important; }
-        .export-mode .node-title { color: #000 !important; font-weight: 600 !important; -webkit-text-stroke: 0.1px #000; }
-        .export-mode .time-hour { color: #000 !important; font-weight: 800 !important; }
+        /* ---------------------------------------------------- */
+        /* 导出模式：极致还原 HTML 效果 */
+        /* ---------------------------------------------------- */
+        .export-mode { 
+            background: var(--bg) !important; 
+            width: 500px !important; 
+            padding: 30px 25px !important; /* 还原页边距 */
+        }
+        .export-mode .node-actions { display: none !important; }
+        .export-mode header { padding: 10px 0 30px 0 !important; } /* 还原头部间距 */
+        .export-mode .btn-share { display: none !important; }
+        .export-mode .node-title { color: var(--text-main) !important; } /* 保持一致的颜色 */
+        .export-mode .watermark {
+            display: block !important;
+            text-align: center; color: var(--text-gray);
+            font-size: 11px; margin-top: 50px; padding-bottom: 20px;
+            font-weight: 700; letter-spacing: 5px;
+        }
 
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
         @keyframes popIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>拾光</h1>
-        <button class="btn-share" onclick="handleExport()">导出图片</button>
-    </header>
+    <!-- 该 ID 区域用于整体克隆导出 -->
+    <div id="capture-root">
+        <header>
+            <h1>拾光</h1>
+            <button class="btn-share" onclick="handleExport()">导出图片</button>
+        </header>
 
-    <div id="scroll-area">
-        <main id="main-content">
-            <div id="timeline" class="timeline"></div>
-            <div class="watermark" style="display:none; text-align:center; padding: 40px 0; letter-spacing: 5px; font-weight:700; color:#000; font-size:10px;">HISTORY · MOMENTS</div>
-        </main>
+        <div id="scroll-area">
+            <main id="main-content">
+                <div id="timeline" class="timeline"></div>
+                <!-- 导出时才会显示的浮水印 -->
+                <div class="watermark" style="display:none;">HISTORY · MOMENTS</div>
+            </main>
+        </div>
     </div>
 
-    <!-- 详情/编辑 弹窗 -->
+    <!-- 弹窗 -->
     <div id="modal-overlay" onclick="closeModal()">
         <div class="modal-sheet" onclick="event.stopPropagation()">
             <div class="modal-group">
                 <span class="modal-label">内容标题</span>
-                <input type="text" id="m-title" class="modal-input" placeholder="输入记录内容">
+                <input type="text" id="m-title" class="modal-input" placeholder="输入内容...">
             </div>
             <div class="modal-time-row">
                 <div class="modal-group">
-                    <span class="modal-label">起始时间</span>
+                    <span class="modal-label">起始</span>
                     <input type="datetime-local" id="m-start" class="modal-input">
                 </div>
                 <div class="modal-group">
-                    <span class="modal-label">结束时间</span>
+                    <span class="modal-label">结束</span>
                     <input type="datetime-local" id="m-end" class="modal-input">
                 </div>
             </div>
             <div class="modal-group">
-                <span class="modal-label">详细描述</span>
+                <span class="modal-label">补充描述</span>
                 <textarea id="m-desc" class="modal-input" style="height:110px; resize:none;" placeholder="添加更多备注..."></textarea>
             </div>
             <div class="modal-footer">
@@ -144,23 +158,19 @@
         </div>
     </div>
 
-    <!-- 底部底栏 -->
+    <!-- 底部输入栏 -->
     <div class="input-bar">
         <div class="input-row">
-            <input type="text" id="title" class="input-field" placeholder="记录此刻..." autocomplete="off">
-            
+            <input type="text" id="title" class="input-field" placeholder="记录这一刻..." autocomplete="off">
             <button class="circle-btn" id="desc-btn" onclick="openModalForAdd()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
             </button>
-
             <div class="circle-btn" id="start-btn">
                 <span>始</span><input type="datetime-local" id="startTime" onchange="syncUI('start')">
             </div>
-
             <div class="circle-btn" id="end-btn">
                 <span>末</span><input type="datetime-local" id="endTime" onchange="syncUI('end')">
             </div>
-
             <button class="circle-btn send-btn" onclick="addEvent()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
             </button>
@@ -168,11 +178,7 @@
     </div>
 
     <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js'); });
-        }
-
-        const DB_KEY = 'shiguang_storage_v1';
+        const DB_KEY = 'shiguang_pwa_final_v1';
         let events = JSON.parse(localStorage.getItem(DB_KEY)) || [];
         let editingId = null;
 
@@ -203,7 +209,6 @@
             document.getElementById('m-title').value = document.getElementById('title').value;
             document.getElementById('m-start').value = document.getElementById('startTime').value;
             document.getElementById('m-end').value = document.getElementById('endTime').value;
-            document.getElementById('m-desc').value = "";
             document.getElementById('modal-overlay').style.display = 'flex';
             document.getElementById('btn-modal-save').onclick = () => {
                 document.getElementById('title').value = document.getElementById('m-title').value;
@@ -242,9 +247,8 @@
                 container.classList.remove('has-items');
                 container.innerHTML = `
                     <div class="empty-state">
-                        <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z M12 2v2m0 16v2m10-10h-2M4 10H2"></path></svg>
-                        <div class="empty-title">拾起一段时光</div>
-                        <div class="empty-desc">在下方输入内容开启记录</div>
+                        <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z M12 2v2m0 16v2m10-10h-2M4 10H2" stroke-width="1.2" stroke-linecap="round"/></svg>
+                        <div class="empty-title">拾一段时光</div>
                     </div>`;
                 return;
             }
@@ -256,19 +260,11 @@
                 const sD = new Date(e.start);
                 const dStr = `${sD.getFullYear()} / ${sD.getMonth() + 1} / ${sD.getDate()}`;
                 const sh = sD.getHours().toString().padStart(2, '0'), sm = sD.getMinutes().toString().padStart(2, '0');
-                
-                let range = '';
-                if (e.end) {
-                    const eD = new Date(e.end);
-                    range = `<span class="time-range">~ ${eD.getHours().toString().padStart(2, '0')}:${eD.getMinutes().toString().padStart(2, '0')}</span>`;
-                }
+                let range = e.end ? `<span class="time-range">~ ${new Date(e.end).getHours().toString().padStart(2, '0')}:${new Date(e.end).getMinutes().toString().padStart(2, '0')}</span>` : '';
 
                 if (dStr !== lastD) {
                     const l = Lunar.fromDate(sD);
-                    html += `<div class="date-divider">
-                        <span class="lunar-tag">${l.getMonthInChinese()}月${l.getDayInChinese()} · ${l.getYearShengXiao()}年 ${l.getJieQi()}</span>
-                        <div class="date-pill">${dStr}</div>
-                    </div>`;
+                    html += `<div class="date-divider"><span class="lunar-tag">${l.getMonthInChinese()}月${l.getDayInChinese()} · ${l.getYearShengXiao()}年 ${l.getJieQi()}</span><div class="date-pill">${dStr}</div></div>`;
                     lastD = dStr;
                 }
 
@@ -286,7 +282,8 @@
                 </div>`;
             });
             container.innerHTML = html;
-            setTimeout(()=>document.getElementById('scroll-area').scrollTo({top:99999, behavior:'smooth'}), 100);
+            const sa = document.getElementById('scroll-area');
+            setTimeout(() => sa.scrollTo({ top: sa.scrollHeight, behavior: 'smooth' }), 100);
         }
 
         function addEvent() {
@@ -307,19 +304,51 @@
         }
 
         async function handleExport() {
-            const exportWin = document.createElement('div');
-            Object.assign(exportWin.style, { position: 'fixed', top: '-9999px', width: '400px' });
-            document.body.appendChild(exportWin);
-            const clone = document.getElementById('main-content').cloneNode(true);
-            exportWin.appendChild(clone);
-            exportWin.classList.add('export-mode');
-            exportWin.querySelector('.watermark').style.display = "block";
-            const canvas = await html2canvas(exportWin, { backgroundColor: '#f9f9fb', scale: 4 });
-            const link = document.createElement('a');
-            link.download = `拾光_${Date.now()}.png`;
-            link.href = canvas.toDataURL();
-            link.click();
-            document.body.removeChild(exportWin);
+            if (events.length === 0) return;
+            
+            // 1. 创建临时的导出容器，用于完美还原样式
+            const exportContainer = document.createElement('div');
+            Object.assign(exportContainer.style, {
+                position: 'fixed',
+                top: '-9999px',
+                left: '0',
+                width: '500px', // 锁定宽度，确保比例一致
+                zIndex: '-1'
+            });
+            document.body.appendChild(exportContainer);
+
+            // 2. 克隆整个 capture-root
+            const clone = document.getElementById('capture-root').cloneNode(true);
+            exportContainer.appendChild(clone);
+            
+            // 3. 应用导出专用类
+            clone.classList.add('export-mode');
+            clone.querySelector('.watermark').style.display = "block";
+            
+            // 4. 执行截图
+            try {
+                const canvas = await html2canvas(clone, {
+                    backgroundColor: '#f9f9fb',
+                    scale: 4, // 保持超高清采样
+                    useCORS: true,
+                    logging: false,
+                    width: 500,
+                    // 确保滚动区域在克隆中被展开
+                    onclone: (clonedDoc) => {
+                        const sa = clonedDoc.querySelector('#scroll-area');
+                        sa.style.overflow = 'visible';
+                        sa.style.height = 'auto';
+                        sa.style.padding = '0px'; // 内部 padding 移到 export-mode
+                    }
+                });
+
+                const link = document.createElement('a');
+                link.download = `拾光_${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png', 1.0);
+                link.click();
+            } finally {
+                document.body.removeChild(exportContainer);
+            }
         }
 
         initTimeInputs(); render();
