@@ -3,172 +3,223 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>拾光</title>
-    
-    <!-- PWA 相关 -->
+    <title>拾光 Pro</title>
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#f9f9fb">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3815/3815412.png">
-
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-    
     <style>
         :root {
             --bg: #f9f9fb;
             --accent: #1c1c1e;
             --text-main: #3a3a3c;
             --text-gray: #a1a1a6;
-            --border-color: #ebebeb;
-            --line-color: #e5e5e5;
-            --header-h: 60px;
+            --border: #ebebeb;
+            --line: #e5e5e5;
+            --blue: #007aff;
         }
 
-        /* 禁用全局弹簧效果 */
-        html, body {
-            height: 100%; width: 100%; overflow: hidden; 
-            overscroll-behavior: none; background: var(--bg);
-        }
-
+        /* 基础重置 & 禁止回弹 */
+        html, body { height: 100%; width: 100%; overflow: hidden; overscroll-behavior: none; background: var(--bg); }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, "SF Pro Text", "PingFang SC", sans-serif; color: var(--text-main); display: flex; flex-direction: column; }
 
-        body {
-            font-family: -apple-system, "SF Pro Text", "PingFang SC", sans-serif;
-            color: var(--text-main); display: flex; flex-direction: column;
-        }
-
-        header {
-            height: var(--header-h); padding: 0 20px;
-            display: flex; justify-content: space-between; align-items: center;
-            background: var(--bg); z-index: 100; flex-shrink: 0;
-        }
-
+        /* Header */
+        header { height: 60px; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; background: var(--bg); z-index: 100; flex-shrink: 0; }
         header h1 { font-size: 20px; font-weight: 700; letter-spacing: -1px; }
+        .btn-share { background: #fff; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; border: 1px solid var(--border); cursor: pointer; }
 
-        .btn-share {
-            background: #fff; padding: 6px 14px; border-radius: 8px;
-            font-size: 13px; font-weight: 600; border: 1px solid var(--border-color);
-        }
-
-        /* 独立滚动区 */
-        #scroll-area {
-            flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
-            overscroll-behavior-y: contain; padding: 10px 16px 140px 10px;
-            scroll-behavior: smooth;
-        }
-
+        /* 滚动容器 */
+        #scroll-area { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; padding: 10px 16px 140px 10px; scroll-behavior: smooth; }
         .timeline { position: relative; padding-left: 0; transition: padding 0.3s ease; }
         .timeline.has-items { padding-left: 75px; }
-        .timeline.has-items::before {
-            content: ''; position: absolute; left: 62px; top: 0; bottom: 0;
-            width: 1px; background: var(--line-color);
-        }
+        .timeline.has-items::before { content: ''; position: absolute; left: 62px; top: 0; bottom: 0; width: 1px; background: var(--line); }
 
         /* 缺省页 */
-        .empty-state {
-            display: flex; flex-direction: column; align-items: center;
-            justify-content: center; height: 65vh; text-align: center;
-            animation: fadeIn 0.6s ease-out;
-        }
-        .empty-icon { width: 64px; height: 64px; margin-bottom: 20px; color: #e1e1e6; }
-        .empty-title { font-size: 16px; font-weight: 600; color: var(--accent); }
+        .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; color: var(--text-gray); }
+        .empty-icon { width: 50px; height: 50px; margin-bottom: 15px; opacity: 0.3; }
 
-        /* 时间节点 */
+        /* 日期分割 */
         .date-divider { position: relative; margin: 24px 0 20px -65px; display: flex; justify-content: center; z-index: 1; }
-        .date-pill { background: #fff; border: 1px solid var(--border-color); color: var(--text-gray); padding: 4px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; }
-        
-        .event-node { position: relative; margin-bottom: 28px; display: flex; }
-        .time-label { position: absolute; left: -75px; top: 10px; width: 50px; display: flex; flex-direction: column; align-items: flex-end; font-family: "SF Mono", monospace; }
-        .time-hour { font-size: 22px; font-weight: 800; line-height: 1; color: var(--accent); }
-        .time-divider { width: 10px; height: 1px; background: var(--accent); margin: 4px 0; opacity: 0.1; }
-        .time-min { font-size: 11px; font-weight: 600; color: var(--text-gray); }
+        .date-pill { background: #fff; border: 1px solid var(--border); color: var(--text-gray); padding: 4px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; }
 
-        .node-card { background: #fff; border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; position: relative; margin-left: 10px; flex: 1; }
-        .node-icon { position: absolute; top: -12px; left: -12px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 20px; z-index: 2; }
-        .del-btn { position: absolute; top: 8px; right: 8px; background: none; border: none; color: #eee; font-size: 18px; }
-        .node-title { font-size: 15px; line-height: 1.6; color: var(--text-main); word-break: break-all; }
+        /* 节点渲染 */
+        .event-node { position: relative; margin-bottom: 30px; display: flex; }
+        .time-label { position: absolute; left: -75px; top: 8px; width: 50px; display: flex; flex-direction: column; align-items: flex-end; font-family: "SF Mono", monospace; }
+        .time-hour { font-size: 18px; font-weight: 800; line-height: 1; color: var(--accent); }
+        .time-range-end { font-size: 11px; font-weight: 600; color: var(--text-gray); margin-top: 2px; }
+        .time-divider-line { width: 8px; height: 1px; background: var(--accent); margin: 4px 0; opacity: 0.1; }
 
-        /* 底部 */
-        .input-bar {
-            position: fixed; bottom: 0; left: 0; width: 100%;
-            background: rgba(255,255,255,0.96); border-top: 1px solid var(--border-color);
-            padding: 12px 16px calc(15px + env(safe-area-inset-bottom)); z-index: 1000;
-        }
-        .input-row { display: flex; align-items: center; gap: 10px; max-width: 600px; margin: 0 auto; }
+        .node-card { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 16px; position: relative; margin-left: 10px; flex: 1; }
+        .node-icon { position: absolute; top: -12px; left: -12px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 18px; z-index: 2; }
+        .node-title { font-size: 15px; font-weight: 500; line-height: 1.5; color: var(--text-main); }
+        .node-desc-text { font-size: 13px; color: var(--text-gray); margin-top: 6px; white-space: pre-wrap; display: block; border-top: 1px dashed var(--line); padding-top: 6px; }
+
+        /* 底部输入栏 */
+        .input-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255,255,255,0.96); backdrop-filter: blur(20px); border-top: 1px solid var(--border); padding: 12px 12px calc(15px + env(safe-area-inset-bottom)); z-index: 1000; }
+        .input-row { display: flex; align-items: center; gap: 8px; max-width: 600px; margin: 0 auto; }
         .input-field { flex: 1; min-width: 0; background: #f1f1f3; border: 1px solid transparent; outline: none; padding: 10px 14px; border-radius: 10px; font-size: 16px; }
-
-        .circle-btn { width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; background: #fff; flex-shrink: 0; color: var(--text-gray); position: relative; }
+        
+        .circle-btn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; background: #fff; flex-shrink: 0; color: var(--text-gray); position: relative; font-size: 10px; font-weight: 700; flex-direction: column; }
+        .circle-btn svg { width: 18px; height: 18px; margin-bottom: -2px; }
         .send-btn { background: var(--accent); color: #fff; border: none; }
         input[type="datetime-local"] { position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+        .btn-active { color: var(--blue) !important; border-color: var(--blue) !important; }
 
-        /* 导出 */
-        .export-mode { background: #f9f9fb !important; width: 400px !important; }
-        .export-mode .node-title { color: #000 !important; font-weight: 500 !important; -webkit-text-stroke: 0.2px #000; }
-        .export-mode .time-hour { color: #000 !important; font-weight: 900 !important; }
-        .export-mode .watermark { display: block !important; text-align: center; color: #000; font-size: 11px; margin: 40px 0; font-weight: 700; letter-spacing: 5px; }
+        /* 描述弹窗 */
+        #desc-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.2); backdrop-filter: blur(4px); z-index: 2000; align-items: center; justify-content: center; padding: 20px; }
+        .modal-content { background: #fff; width: 100%; max-width: 400px; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        .modal-content textarea { width: 100%; height: 150px; border: none; background: #f1f1f3; border-radius: 12px; padding: 12px; font-size: 15px; outline: none; resize: none; }
+        .modal-btns { display: flex; justify-content: flex-end; gap: 10px; }
+        .modal-btn { padding: 8px 16px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; }
+        .btn-confirm { background: var(--accent); color: #fff; }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* 导出模式样式 */
+        .export-mode { background: var(--bg) !important; width: 400px !important; }
+        .export-mode .node-title { color: #000 !important; font-weight: 600 !important; -webkit-text-stroke: 0.1px #000; }
+        .export-mode .time-hour { color: #000 !important; font-weight: 800 !important; }
+        .export-mode .node-card { border: 1px solid #ccc !important; }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>拾光</h1>
+        <h1>拾光 Pro</h1>
         <button class="btn-share" onclick="handleExport()">导出图片</button>
     </header>
 
     <div id="scroll-area">
         <main id="main-content">
             <div id="timeline" class="timeline"></div>
-            <div class="watermark" style="display:none;">HISTORY · MOMENTS</div>
+            <div class="watermark" style="display:none; text-align:center; padding: 40px 0; letter-spacing: 5px; font-weight:700; color:#000; font-size:10px;">HISTORY · MOMENTS</div>
         </main>
+    </div>
+
+    <!-- 描述输入弹窗 -->
+    <div id="desc-modal" onclick="closeDesc(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3 style="font-size: 16px;">补充记录描述</h3>
+            <textarea id="desc-input" placeholder="输入更多细节..."></textarea>
+            <div class="modal-btns">
+                <button class="modal-btn" onclick="toggleDescModal()">取消</button>
+                <button class="modal-btn btn-confirm" onclick="toggleDescModal()">保存</button>
+            </div>
+        </div>
     </div>
 
     <div class="input-bar">
         <div class="input-row">
-            <input type="text" id="title" class="input-field" placeholder="记录此刻的想法..." autocomplete="off">
-            <div class="circle-btn" id="timeCircle">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                <input type="datetime-local" id="eventTime">
+            <input type="text" id="title" class="input-field" placeholder="正在做什么..." autocomplete="off">
+            
+            <!-- 描述按钮 -->
+            <button class="circle-btn" id="desc-btn" onclick="toggleDescModal()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            </button>
+
+            <!-- 开始时间 -->
+            <div class="circle-btn" id="start-btn">
+                <span>始</span>
+                <input type="datetime-local" id="startTime" onchange="updateTimeUI('start')">
             </div>
+
+            <!-- 结束时间 -->
+            <div class="circle-btn" id="end-btn">
+                <span>末</span>
+                <input type="datetime-local" id="endTime" onchange="updateTimeUI('end')">
+            </div>
+
             <button class="circle-btn send-btn" onclick="addEvent()">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
             </button>
         </div>
     </div>
 
     <script>
-        // PWA Service Worker 注册
+        // PWA 注册
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                .then(reg => console.log('SW Registered'))
-                .catch(err => console.log('SW Failed', err));
-            });
+            window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js'); });
         }
 
-        const DB_KEY = 'shiguang_pwa_pro_v1';
+        const DB_KEY = 'shiguang_pro_data_v1';
         let events = JSON.parse(localStorage.getItem(DB_KEY)) || [];
-        const scrollArea = document.getElementById('scroll-area');
+        let tempDesc = "";
 
-        function setNow() {
+        function initTime() {
             const now = new Date();
             now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-            document.getElementById('eventTime').value = now.toISOString().slice(0, 16);
-            document.getElementById('timeCircle').style.color = 'var(--text-gray)';
-            document.getElementById('timeCircle').style.borderColor = 'var(--border-color)';
+            const str = now.toISOString().slice(0, 16);
+            document.getElementById('startTime').value = str;
+            document.getElementById('endTime').value = ""; // 结束时间默认为空
+            updateTimeUI('start');
+            updateTimeUI('end');
+            tempDesc = "";
+            document.getElementById('desc-btn').classList.remove('btn-active');
+            document.getElementById('desc-input').value = "";
         }
 
-        function scrollToBottom() {
-            setTimeout(() => { scrollArea.scrollTo({ top: scrollArea.scrollHeight, behavior: 'smooth' }); }, 150);
+        function updateTimeUI(type) {
+            const val = document.getElementById(type + 'Time').value;
+            const btn = document.getElementById(type + '-btn');
+            if (val) btn.classList.add('btn-active');
+            else btn.classList.remove('btn-active');
         }
 
-        document.getElementById('title').addEventListener('focus', () => { setTimeout(scrollToBottom, 350); });
-        document.getElementById('eventTime').addEventListener('change', () => {
-            const tc = document.getElementById('timeCircle');
-            tc.style.color = '#007aff'; tc.style.borderColor = '#007aff';
-        });
+        function toggleDescModal() {
+            const modal = document.getElementById('desc-modal');
+            const isVisible = modal.style.display === 'flex';
+            modal.style.display = isVisible ? 'none' : 'flex';
+            tempDesc = document.getElementById('desc-input').value;
+            if (tempDesc.trim()) document.getElementById('desc-btn').classList.add('btn-active');
+            else document.getElementById('desc-btn').classList.remove('btn-active');
+        }
+
+        function render() {
+            const container = document.getElementById('timeline');
+            if (events.length === 0) {
+                container.classList.remove('has-items');
+                container.innerHTML = `<div class="empty-state">尚未开启这段旅程</div>`;
+                return;
+            }
+            container.classList.add('has-items');
+            events.sort((a, b) => new Date(a.start) - new Date(b.start));
+
+            let html = '', lastDate = '';
+            events.forEach(e => {
+                const sD = new Date(e.start);
+                const dateStr = `${sD.getFullYear()} / ${sD.getMonth() + 1} / ${sD.getDate()}`;
+                const sTime = sD.getHours().toString().padStart(2, '0') + ':' + sD.getMinutes().toString().padStart(2, '0');
+                
+                let eTimeHtml = '';
+                if (e.end) {
+                    const eD = new Date(e.end);
+                    eTimeHtml = `<span class="time-range-end">~ ${eD.getHours().toString().padStart(2, '0')}:${eD.getMinutes().toString().padStart(2, '0')}</span>`;
+                }
+
+                if (dateStr !== lastDate) {
+                    html += `<div class="date-divider"><div class="date-pill">${dateStr}</div></div>`;
+                    lastDate = dateStr;
+                }
+
+                const h = sTime.split(':')[0];
+                const m = sTime.split(':')[1];
+
+                html += `
+                    <div class="event-node">
+                        <div class="time-label">
+                            <span class="time-hour">${h}:${m}</span>
+                            ${eTimeHtml}
+                        </div>
+                        <div class="node-card">
+                            <div class="node-icon">${getTimeIcon(e.start)}</div>
+                            <button class="del-btn" onclick="deleteEvent(${e.id})" style="position:absolute; right:10px; top:10px; border:none; background:none; color:#eee; font-size:18px;">×</button>
+                            <div class="node-title">${e.title}</div>
+                            ${e.desc ? `<div class="node-desc-text">${e.desc}</div>` : ''}
+                        </div>
+                    </div>`;
+            });
+            container.innerHTML = html;
+            setTimeout(() => { document.getElementById('scroll-area').scrollTo({ top: 99999, behavior: 'smooth' }); }, 100);
+        }
 
         function getTimeIcon(dateStr) {
             const h = new Date(dateStr).getHours();
@@ -179,47 +230,21 @@
             return '🌙';
         }
 
-        function render() {
-            const container = document.getElementById('timeline');
-            if (events.length === 0) {
-                container.classList.remove('has-items');
-                container.innerHTML = `<div class="empty-state">
-                    <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z M12 2v2m0 16v2m10-10h-2M4 10H2"></path></svg>
-                    <div class="empty-title">尚未开启这段旅程</div>
-                </div>`;
-                return;
-            }
-            container.classList.add('has-items');
-            events.sort((a, b) => new Date(a.rawTime) - new Date(b.rawTime));
-            let html = '', lastDate = '';
-            events.forEach(e => {
-                const dateObj = new Date(e.rawTime);
-                const dateStr = `${dateObj.getFullYear()} / ${dateObj.getMonth() + 1} / ${dateObj.getDate()}`;
-                const h = dateObj.getHours().toString().padStart(2, '0'), m = dateObj.getMinutes().toString().padStart(2, '0');
-                if (dateStr !== lastDate) { html += `<div class="date-divider"><div class="date-pill">${dateStr}</div></div>`; lastDate = dateStr; }
-                html += `<div class="event-node">
-                    <div class="time-label"><span class="time-hour">${h}</span><div class="time-divider"></div><span class="time-min">${m}</span></div>
-                    <div class="node-card">
-                        <div class="node-icon">${getTimeIcon(e.rawTime)}</div>
-                        <button class="del-btn" onclick="deleteEvent(${e.id})">×</button>
-                        <div class="node-title">${e.title}</div>
-                    </div>
-                </div>`;
-            });
-            container.innerHTML = html;
-            scrollToBottom();
-        }
-
         function addEvent() {
-            const titleInput = document.getElementById('title');
-            if (!titleInput.value.trim()) return;
-            events.push({ id: Date.now(), title: titleInput.value, rawTime: document.getElementById('eventTime').value });
+            const title = document.getElementById('title').value;
+            const start = document.getElementById('startTime').value;
+            const end = document.getElementById('endTime').value;
+            if (!title.trim() || !start) return;
+
+            events.push({ id: Date.now(), title, start, end, desc: document.getElementById('desc-input').value });
             localStorage.setItem(DB_KEY, JSON.stringify(events));
-            titleInput.value = ''; render(); setNow();
+            document.getElementById('title').value = "";
+            render();
+            initTime();
         }
 
         function deleteEvent(id) {
-            if (confirm('删除此条记录？')) {
+            if (confirm('删除此项记录？')) {
                 events = events.filter(e => e.id !== id);
                 localStorage.setItem(DB_KEY, JSON.stringify(events));
                 render();
@@ -227,23 +252,23 @@
         }
 
         async function handleExport() {
-            if (events.length === 0) return;
             const exportWin = document.createElement('div');
-            Object.assign(exportWin.style, { position: 'fixed', top: '-9999px', left: '0', width: '400px', zIndex: '-1' });
+            Object.assign(exportWin.style, { position: 'fixed', top: '-9999px', width: '400px' });
             document.body.appendChild(exportWin);
             const clone = document.getElementById('main-content').cloneNode(true);
             exportWin.appendChild(clone);
             exportWin.classList.add('export-mode');
-            try {
-                const canvas = await html2canvas(exportWin, { backgroundColor: '#f9f9fb', scale: 4, useCORS: true, width: 400 });
-                const link = document.createElement('a');
-                link.download = `拾光_${Date.now()}.png`;
-                link.href = canvas.toDataURL('image/png', 1.0);
-                link.click();
-            } finally { document.body.removeChild(exportWin); }
+            exportWin.querySelector('.watermark').style.display = "block";
+
+            const canvas = await html2canvas(exportWin, { backgroundColor: '#f9f9fb', scale: 4 });
+            const link = document.createElement('a');
+            link.download = `拾光_${Date.now()}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+            document.body.removeChild(exportWin);
         }
 
-        setNow();
+        initTime();
         render();
     </script>
 </body>
