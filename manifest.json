@@ -1,0 +1,21 @@
+{
+  "name": "拾光 Timeline",
+  "short_name": "拾光",
+  "description": "简约的时间轴记录工具",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#f9f9fb",
+  "theme_color": "#f9f9fb",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3815/3815412.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3815/3815412.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>拾光</title>
+    
+    <!-- PWA 相关 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#f9f9fb">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3815/3815412.png">
+
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    
+    <style>
+        :root {
+            --bg: #f9f9fb;
+            --accent: #1c1c1e;
+            --text-main: #3a3a3c;
+            --text-gray: #a1a1a6;
+            --border-color: #ebebeb;
+            --line-color: #e5e5e5;
+            --header-h: 60px;
+        }
+
+        /* 禁用全局弹簧效果 */
+        html, body {
+            height: 100%; width: 100%; overflow: hidden; 
+            overscroll-behavior: none; background: var(--bg);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: -apple-system, "SF Pro Text", "PingFang SC", sans-serif;
+            color: var(--text-main); display: flex; flex-direction: column;
+        }
+
+        header {
+            height: var(--header-h); padding: 0 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--bg); z-index: 100; flex-shrink: 0;
+        }
+
+        header h1 { font-size: 20px; font-weight: 700; letter-spacing: -1px; }
+
+        .btn-share {
+            background: #fff; padding: 6px 14px; border-radius: 8px;
+            font-size: 13px; font-weight: 600; border: 1px solid var(--border-color);
+        }
+
+        /* 独立滚动区 */
+        #scroll-area {
+            flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+            overscroll-behavior-y: contain; padding: 10px 16px 140px 10px;
+            scroll-behavior: smooth;
+        }
+
+        .timeline { position: relative; padding-left: 0; transition: padding 0.3s ease; }
+        .timeline.has-items { padding-left: 75px; }
+        .timeline.has-items::before {
+            content: ''; position: absolute; left: 62px; top: 0; bottom: 0;
+            width: 1px; background: var(--line-color);
+        }
+
+        /* 缺省页 */
+        .empty-state {
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; height: 65vh; text-align: center;
+            animation: fadeIn 0.6s ease-out;
+        }
+        .empty-icon { width: 64px; height: 64px; margin-bottom: 20px; color: #e1e1e6; }
+        .empty-title { font-size: 16px; font-weight: 600; color: var(--accent); }
+
+        /* 时间节点 */
+        .date-divider { position: relative; margin: 24px 0 20px -65px; display: flex; justify-content: center; z-index: 1; }
+        .date-pill { background: #fff; border: 1px solid var(--border-color); color: var(--text-gray); padding: 4px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+        
+        .event-node { position: relative; margin-bottom: 28px; display: flex; }
+        .time-label { position: absolute; left: -75px; top: 10px; width: 50px; display: flex; flex-direction: column; align-items: flex-end; font-family: "SF Mono", monospace; }
+        .time-hour { font-size: 22px; font-weight: 800; line-height: 1; color: var(--accent); }
+        .time-divider { width: 10px; height: 1px; background: var(--accent); margin: 4px 0; opacity: 0.1; }
+        .time-min { font-size: 11px; font-weight: 600; color: var(--text-gray); }
+
+        .node-card { background: #fff; border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; position: relative; margin-left: 10px; flex: 1; }
+        .node-icon { position: absolute; top: -12px; left: -12px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 20px; z-index: 2; }
+        .del-btn { position: absolute; top: 8px; right: 8px; background: none; border: none; color: #eee; font-size: 18px; }
+        .node-title { font-size: 15px; line-height: 1.6; color: var(--text-main); word-break: break-all; }
+
+        /* 底部 */
+        .input-bar {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: rgba(255,255,255,0.96); border-top: 1px solid var(--border-color);
+            padding: 12px 16px calc(15px + env(safe-area-inset-bottom)); z-index: 1000;
+        }
+        .input-row { display: flex; align-items: center; gap: 10px; max-width: 600px; margin: 0 auto; }
+        .input-field { flex: 1; min-width: 0; background: #f1f1f3; border: 1px solid transparent; outline: none; padding: 10px 14px; border-radius: 10px; font-size: 16px; }
+
+        .circle-btn { width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; background: #fff; flex-shrink: 0; color: var(--text-gray); position: relative; }
+        .send-btn { background: var(--accent); color: #fff; border: none; }
+        input[type="datetime-local"] { position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+
+        /* 导出 */
+        .export-mode { background: #f9f9fb !important; width: 400px !important; }
+        .export-mode .node-title { color: #000 !important; font-weight: 500 !important; -webkit-text-stroke: 0.2px #000; }
+        .export-mode .time-hour { color: #000 !important; font-weight: 900 !important; }
+        .export-mode .watermark { display: block !important; text-align: center; color: #000; font-size: 11px; margin: 40px 0; font-weight: 700; letter-spacing: 5px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>拾光</h1>
+        <button class="btn-share" onclick="handleExport()">导出图片</button>
+    </header>
+
+    <div id="scroll-area">
+        <main id="main-content">
+            <div id="timeline" class="timeline"></div>
+            <div class="watermark" style="display:none;">HISTORY · MOMENTS</div>
+        </main>
+    </div>
+
+    <div class="input-bar">
+        <div class="input-row">
+            <input type="text" id="title" class="input-field" placeholder="记录此刻的想法..." autocomplete="off">
+            <div class="circle-btn" id="timeCircle">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                <input type="datetime-local" id="eventTime">
+            </div>
+            <button class="circle-btn send-btn" onclick="addEvent()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // PWA Service Worker 注册
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                .then(reg => console.log('SW Registered'))
+                .catch(err => console.log('SW Failed', err));
+            });
+        }
+
+        const DB_KEY = 'shiguang_pwa_pro_v1';
+        let events = JSON.parse(localStorage.getItem(DB_KEY)) || [];
+        const scrollArea = document.getElementById('scroll-area');
+
+        function setNow() {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('eventTime').value = now.toISOString().slice(0, 16);
+            document.getElementById('timeCircle').style.color = 'var(--text-gray)';
+            document.getElementById('timeCircle').style.borderColor = 'var(--border-color)';
+        }
+
+        function scrollToBottom() {
+            setTimeout(() => { scrollArea.scrollTo({ top: scrollArea.scrollHeight, behavior: 'smooth' }); }, 150);
+        }
+
+        document.getElementById('title').addEventListener('focus', () => { setTimeout(scrollToBottom, 350); });
+        document.getElementById('eventTime').addEventListener('change', () => {
+            const tc = document.getElementById('timeCircle');
+            tc.style.color = '#007aff'; tc.style.borderColor = '#007aff';
+        });
+
+        function getTimeIcon(dateStr) {
+            const h = new Date(dateStr).getHours();
+            if (h >= 5 && h < 8) return '🌅';
+            if (h >= 8 && h < 17) return '☀️';
+            if (h >= 17 && h < 19) return '🌇';
+            if (h >= 19 && h < 23) return '✨';
+            return '🌙';
+        }
+
+        function render() {
+            const container = document.getElementById('timeline');
+            if (events.length === 0) {
+                container.classList.remove('has-items');
+                container.innerHTML = `<div class="empty-state">
+                    <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z M12 2v2m0 16v2m10-10h-2M4 10H2"></path></svg>
+                    <div class="empty-title">尚未开启这段旅程</div>
+                </div>`;
+                return;
+            }
+            container.classList.add('has-items');
+            events.sort((a, b) => new Date(a.rawTime) - new Date(b.rawTime));
+            let html = '', lastDate = '';
+            events.forEach(e => {
+                const dateObj = new Date(e.rawTime);
+                const dateStr = `${dateObj.getFullYear()} / ${dateObj.getMonth() + 1} / ${dateObj.getDate()}`;
+                const h = dateObj.getHours().toString().padStart(2, '0'), m = dateObj.getMinutes().toString().padStart(2, '0');
+                if (dateStr !== lastDate) { html += `<div class="date-divider"><div class="date-pill">${dateStr}</div></div>`; lastDate = dateStr; }
+                html += `<div class="event-node">
+                    <div class="time-label"><span class="time-hour">${h}</span><div class="time-divider"></div><span class="time-min">${m}</span></div>
+                    <div class="node-card">
+                        <div class="node-icon">${getTimeIcon(e.rawTime)}</div>
+                        <button class="del-btn" onclick="deleteEvent(${e.id})">×</button>
+                        <div class="node-title">${e.title}</div>
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = html;
+            scrollToBottom();
+        }
+
+        function addEvent() {
+            const titleInput = document.getElementById('title');
+            if (!titleInput.value.trim()) return;
+            events.push({ id: Date.now(), title: titleInput.value, rawTime: document.getElementById('eventTime').value });
+            localStorage.setItem(DB_KEY, JSON.stringify(events));
+            titleInput.value = ''; render(); setNow();
+        }
+
+        function deleteEvent(id) {
+            if (confirm('删除此条记录？')) {
+                events = events.filter(e => e.id !== id);
+                localStorage.setItem(DB_KEY, JSON.stringify(events));
+                render();
+            }
+        }
+
+        async function handleExport() {
+            if (events.length === 0) return;
+            const exportWin = document.createElement('div');
+            Object.assign(exportWin.style, { position: 'fixed', top: '-9999px', left: '0', width: '400px', zIndex: '-1' });
+            document.body.appendChild(exportWin);
+            const clone = document.getElementById('main-content').cloneNode(true);
+            exportWin.appendChild(clone);
+            exportWin.classList.add('export-mode');
+            try {
+                const canvas = await html2canvas(exportWin, { backgroundColor: '#f9f9fb', scale: 4, useCORS: true, width: 400 });
+                const link = document.createElement('a');
+                link.download = `拾光_${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png', 1.0);
+                link.click();
+            } finally { document.body.removeChild(exportWin); }
+        }
+
+        setNow();
+        render();
+    </script>
+</body>
+</html>
